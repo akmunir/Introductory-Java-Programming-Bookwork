@@ -1,4 +1,4 @@
-// Given the below main(), complete PrintChar2_SHELL run() as specified below:
+package bookStuff;// Given the below main(), complete PrintChar2_SHELL run() as specified below:
 
 //The thread class for printing specific characters in specified times
 class PrintChar2 implements Runnable // get rid of _SHELL
@@ -111,7 +111,7 @@ class PrintChar2 implements Runnable // get rid of _SHELL
 
             }// if
         }  // run()
-    } // PrintChar2
+    } // bookStuff.PrintChar2
 
 
     // ===============================================================
