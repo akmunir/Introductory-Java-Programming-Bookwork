@@ -8,12 +8,12 @@ package Projects;
  * GuessingGameShow_PlayerThread:  A GameShowPlayer keeps guessing for a number, 1-max, with higher or lower, it adjusts accordingly,
  *
  *  It must do the following:
- *  (1)'implements' the Runnable Interface
- *  (2) Has each of the following fields:
+ *  (1)'implements' the Runnable Interface done
+ *  (2) Has each of the following fields: done
  *      1 String for the name
  *      3 ints for the actualNumber, guessNumber, and guessCount
  *      2 ints for low + high
- *  (3) Has a constructor to assign each of the fields above.
+ *  (3) Has a constructor to assign each of the fields above. done
  *  (4) run():
  *          * Have a loop 'while (guessNumber!=actualNumber)' that keeps trying to guess the actualNumber via a binary guess approach.
  *          *  Output:
@@ -23,9 +23,43 @@ package Projects;
 
    class GuessingGameShow_PlayerThread implements Runnable
   {
+      private String name;
+      private int actualNumber, guessNumber, guessCount, low, high;
+
+      public GuessingGameShow_PlayerThread(String name, int actualNumber, int high)
+      {
+        this.name = name;
+        this.actualNumber = actualNumber;
+        this.guessNumber = 0;
+        this.guessCount = 0;
+        this.low = 1;
+        this.high = high;
+      }
       public void run()
       {
+          String hint = "";
+        while (low <= high)
+        {
+            guessNumber = (low + high) / 2;
+            guessCount++;
+            if (guessNumber > actualNumber)
+            {
+                high = guessNumber - 1;
+                hint = "HIGH";
 
+            } else if (guessNumber < actualNumber) {
+                hint = "LOW";
+                low = guessNumber + 1;
+            } else
+                break;
+            try {
+                Thread.sleep((int) (Math.random() * 1000) + 1);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println(name + " Guess Number: " + guessNumber + " Guess Count: " + guessCount + " Too " + hint + " Thread: " + Thread.currentThread().getName());
+        }
+          System.out.println(">>>>>>>>>>>>>>>> " + name + " Got the Number! Guess Number: " + guessNumber + " Actual Number: " + actualNumber + " in " + guessCount + " tries >>>>>>>>>>>>>>>");
       }
 
 // >>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<
@@ -49,19 +83,19 @@ package Projects;
  */
 
 
-
-
-
-
-
 public class GuessingGameShowONE_CLIENT_THREADS_SHELL
 {
     public static void main(String[] args)
     {
-
-        // >>>>>>>>>> YOUT CODE HERE <<<<<<<<<<
-
-        System.exit(0);
+        int n1 = (int) (Math.random() * Integer.MAX_VALUE) + 1;
+        int n2 = (int) (Math.random() * Integer.MAX_VALUE) + 1;
+        int n3 = (int) (Math.random() * Integer.MAX_VALUE) + 1;
+        Thread p1 = new Thread(new GuessingGameShow_PlayerThread("P1", n1, 1000000000));
+        Thread p2 = new Thread(new GuessingGameShow_PlayerThread("P2", n2, 1000000000));
+        Thread p3 = new Thread(new GuessingGameShow_PlayerThread("P3", n3, 1000000000));
+        p1.start();
+        p2.start();
+        p3.start();
 
     } // main
 
