@@ -21,24 +21,24 @@ package Projects;
  *  (5) Finally, when it gets it right, Output the final guessCount and the actualNumber
  */
 
-   class GuessingGameShow_PlayerThread implements Runnable
-  {
-      private String name;
-      private int actualNumber, guessNumber, guessCount, low, high;
+class GuessingGameShow_PlayerThread implements Runnable
+{
+    private String name;
+    private int actualNumber, guessNumber, guessCount, low, high;
 
-      public GuessingGameShow_PlayerThread(String name, int actualNumber, int high)
-      {
+    public GuessingGameShow_PlayerThread(String name, int actualNumber, int high)
+    {
         this.name = name;
         this.actualNumber = actualNumber;
         this.guessNumber = 0;
         this.guessCount = 0;
         this.low = 1;
         this.high = high;
-      }
-      public void run()
-      {
-          String hint = "";
-        while (low <= high)
+    }
+    public void run()
+    {
+        String hint = "";
+        while (guessNumber!=actualNumber)
         {
             guessNumber = (low + high) / 2;
             guessCount++;
@@ -59,13 +59,23 @@ package Projects;
             }
             System.out.println(name + " Guess Number: " + guessNumber + " Guess Count: " + guessCount + " Too " + hint + " Thread: " + Thread.currentThread().getName());
         }
-          System.out.println(">>>>>>>>>>>>>>>> " + name + " Got the Number! Guess Number: " + guessNumber + " Actual Number: " + actualNumber + " in " + guessCount + " tries >>>>>>>>>>>>>>>");
-      }
+        System.out.println(">>>>>>>>>>>>>>>> " + name + " Got the Number! Guess Number: " + guessNumber + " Actual Number: " + actualNumber + " in " + guessCount + " tries >>>>>>>>>>>>>>>");
+    }
+
+    public int getGuessCount()
+    {
+        return guessCount;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
 
 // >>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<
 // >>>>>>>>>> YOUR CODE HERE <<<<<<<<<<
 // >>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<
-  }
+}
 
 
 // ============================================================================
@@ -87,12 +97,12 @@ public class GuessingGameShowONE_CLIENT_THREADS_SHELL
 {
     public static void main(String[] args)
     {
-        int n1 = (int) (Math.random() * Integer.MAX_VALUE) + 1;
-        int n2 = (int) (Math.random() * Integer.MAX_VALUE) + 1;
-        int n3 = (int) (Math.random() * Integer.MAX_VALUE) + 1;
-        Thread p1 = new Thread(new GuessingGameShow_PlayerThread("P1", n1, 1000000000));
-        Thread p2 = new Thread(new GuessingGameShow_PlayerThread("P2", n2, 1000000000));
-        Thread p3 = new Thread(new GuessingGameShow_PlayerThread("P3", n3, 1000000000));
+        int n1 = (int) (Math.random() * 10000000) + 1;
+        int n2 = (int) (Math.random() * 10000000) + 1;
+        int n3 = (int) (Math.random() * 10000000) + 1;
+        Thread p1 = new Thread(new GuessingGameShow_PlayerThread("P1", n1, 10000000));
+        Thread p2 = new Thread(new GuessingGameShow_PlayerThread("P2", n2, 10000000));
+        Thread p3 = new Thread(new GuessingGameShow_PlayerThread("P3", n3, 10000000));
         p1.start();
         p2.start();
         p3.start();
@@ -194,4 +204,3 @@ P1: guessNumber = 23818693	 guessCount = 27 Thread: GuessingGameShow_PlayerThrea
 >>>>> P1: You got with guessCount = 27    actualNumber = 23818693
 
  */
-
