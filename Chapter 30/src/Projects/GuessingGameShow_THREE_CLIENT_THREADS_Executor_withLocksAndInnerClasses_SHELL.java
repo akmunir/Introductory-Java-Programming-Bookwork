@@ -8,6 +8,7 @@ package Projects;
 
 //  Possible OUTPUT at bottom of program
 
+import java.beans.beancontext.BeanContextChildComponentProxy;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -29,8 +30,9 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
         for (int i=1; i<=numberOfPlayers; i++)
         {
             playersActualNumber = (int) (Math.random()*max+1);
-            p = new GuessingGameShow_PlayerThread_withBank("P"+i,playersActualNumber,max,playersStartingBank);
+            p = new GuessingGameShow_PlayerThread_withBank("P"+i,playersActualNumber,max,new Bank(playersStartingBank));
             t = new Thread(p);  // ... so 'p' can be put into a Thread.
+            t.setName(("GuessingGameShow_Thread " + i));
             threadArray[i-1] = p;
             executor.execute(t);
         }  // i
@@ -55,6 +57,8 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
         }
 
     }
+
+
 
     // ******************************************************************
     // ************************* INNER CLASSES  *************************
@@ -82,6 +86,7 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
     public static class GuessingGameShow_PlayerThread_withBank implements Runnable {
         private String name;
         private int actualNumber, guessNumber, guessCount, low, high, playersBet;
+
         private Bank playersBank;
         private static Bank bigBank;
 
@@ -100,48 +105,54 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
 
         public void run() {
             String resultingString = "";
+                while (guessNumber != actualNumber && playersBank.getBankBalance() != 0 && bigBank.getBankBalance() != 0) {
+                    guessCount++;
+                    guessNumber = (low + high) / 2;
+                    synchronized (this)
+                    {
+                        int num = (int) (Math.random() * 100) + 1;
+                        double percentage = num / (double) 100;
+                        playersBet = (int) (percentage * 10);
+                        if (playersBet == 0 || playersBank.getBankBalance() == 1)
+                            playersBet = 1;
+                        bigBank.bet(this);
+                    }
+                    resultingString = name + ": guessNumber = " + guessNumber +
+                            "\t guessCount = " + guessCount +
+                            "\t playersBet = " + playersBet;
 
-            while (guessNumber != actualNumber && playersBank.getBankBalance() != 0 && bigBank.getBankBalance() != 0) {
-                guessCount++;
-                guessNumber = (low + high) / 2;
+                    if (guessNumber < actualNumber) {
+                        low = guessNumber;
+                        resultingString += " Guess too LOW! You lose " + playersBet + " playersBank = " + playersBank;
+                    } else if (guessNumber > actualNumber) {
+                        high = guessNumber;
+                        resultingString += " Guess too HIGH! You lose " + playersBet + " playersBank = " + playersBank;
+                    } else {  // (guessNumber == actualNumber)
+                        resultingString += " CORRECT! You win " + playersBet * 10 + " !" + this.getName();
+                        System.out.println(">>>>> " + this.getName() + " You got with guessCount = " + guessCount + " actualNumber = " + actualNumber + "  playersBank = " + playersBank);
+                    }
+                    System.out.println(resultingString + " Thread: " + this);
 
-                // NEW: figure playersBet and call bank's bet.
-                int num = (int) (Math.random() * 100) + 1;
-                playersBet = num / 100 * playersBank.getBankBalance();
-                resultingString = name + ": guessNumber = " + guessNumber +
-                        "\t guessCount = " + guessCount +
-                        "\t playersBet = " + playersBet;
-
-                if (guessNumber < actualNumber) {
-                    low = guessNumber;
-                    resultingString += " Guess too LOW! You lose " + playersBet + " playersBank = " + playersBank;
-                } else if (guessNumber > actualNumber) {
-                    high = guessNumber;
-                    resultingString += " Guess too HIGH! You lose " + playersBet + " playersBank = " + playersBank;
-                } else {  // (guessNumber == actualNumber)
-                    resultingString += " CORRECT! You win!";
+                } // while (guessNumber!=actualNumber && playersBet!=0))
+                if (bigBank.getBankBalance() == 0)
+                {
+                    System.out.println(">>>>> bigBank.getBankBalance()==0!!!  Game OVER!!!"
+                            + " Thread: " + this);
+                    Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+                    for (Thread t: threadSet)
+                        System.out.println(t.getStackTrace());
+                    System.out.println(threadSet);
                 }
+                if (playersBank.bankBalance == 0)
+                    System.out.println(">>>>> " + this.getName() + " You ran out of money! guessCount = " + guessCount + " actualNumber = " + actualNumber + "  playersBank = " + playersBank);
 
-                System.out.println(resultingString + " Thread: " + this);
-
-            } // while (guessNumber!=actualNumber && playersBet!=0))
-
-
-
-            if (bigBank.getBankBalance() == 0) {
-                System.out.println(">>>>> bigBank.getBankBalance()==0!!!  Game OVER!!!"
-                        + " Thread: " + this);
-            }
-            System.out.println(">>>>> " + name + ": Your guessCount = " + guessCount +
-                    " actualNumber = " + actualNumber +
-                    " playersBank = " + playersBank);
         } // run - thread dies
-        public void addToPlayersBank(int value)
+        public void addToPlayersBank(double value)
         {
             playersBank.bankBalance += value;
         }
 
-        public void subtractFromPlayersBank(int value)
+        public void subtractFromPlayersBank(double value)
         {
             playersBank.bankBalance -= value;
         }
@@ -165,7 +176,7 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
             return playersBank;
         }
 
-        public int getPlayersBet()
+        public double getPlayersBet()
         {
             return playersBet;
         }
@@ -204,18 +215,20 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
     public static class Bank {
         private static Lock lock = new ReentrantLock();
         private int bankBalance;
+        private Condition bigBankEmpty = lock.newCondition();
 
         public Bank(int bankBalance) {this.bankBalance = bankBalance;}
 
         public void bet(GuessingGameShow_PlayerThread_withBank player) {
             lock.lock();
-            try
-            {
-                if (player.guessNumber == player.actualNumber)
-                {
-                    player.addToPlayersBank(player.getPlayersBet());
-                } else
+            try {
+                if (player.guessNumber == player.actualNumber) {
+                    player.addToPlayersBank(player.getPlayersBet() * 10);
+                    this.bankBalance -= player.getPlayersBet();
+                } else {
                     player.subtractFromPlayersBank(player.getPlayersBet());
+                    this.bankBalance += player.getPlayersBet();
+                }
             } finally {
                 lock.unlock();
             }
@@ -227,11 +240,28 @@ public class GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerCla
             return bankBalance;
         }
 
+        public String toString()
+        {
+            return "Bank Balance: " + bankBalance;
+        }
+
     }
 }// Bank
 
+ class threadPlayersBank_Comparator implements Comparator<GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerClasses_SHELL.GuessingGameShow_PlayerThread_withBank>
+{
+    public int compare(GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerClasses_SHELL.GuessingGameShow_PlayerThread_withBank p1, GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerClasses_SHELL.GuessingGameShow_PlayerThread_withBank p2) {
+        if (p1.getPlayersBank().getBankBalance() < p2.getPlayersBank().getBankBalance())
+            return -1;
+        else if (p1.getPlayersBank().getBankBalance() > p2.getPlayersBank().getBankBalance())
+            return 1;
+        else
+            return 0;
+    }
+}
 
- // GuessingGameShow_THREE_CLIENT_THREADS_Executor_Locks
+
+// GuessingGameShow_THREE_CLIENT_THREADS_Executor_Locks
 
 /* >>>>>>>>>>>>>>>>>>>> OUTPUT Example <<<<<<<<<<<<<<<<<<<<
 P2: guessNumber = 500000	 guessCount = 1	 playersBet = 6 Guess too LOW! You lose 6 playersBank = 94 Thread: GuessingGameShow_THREE_CLIENT_THREADS_Executor_withLocksAndInnerClasses$GuessingGameShow_PlayerThread_withBank@4954f
@@ -371,4 +401,3 @@ Name = P1: ActualNumber = 829864   GuessNumber = 829864   GuessCount = 19   Play
 Name = P3: ActualNumber = 577162   GuessNumber = 577162   GuessCount = 20   PlayersBank = 47.0   gpt/this = GuessingGameShow_THREE_CLIENT_THREADS_Executor_Locks$GuessingGameShow_PlayerThread_withBank@1bba7a0
 
  */
-
